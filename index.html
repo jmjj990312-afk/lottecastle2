@@ -455,6 +455,7 @@ footer button{background:none;border:0;color:#f3dc95;text-decoration:underline;f
       <li><b>보유 기간</b>: 상담 완료 후 6개월 이내 파기 (요청 시 즉시 파기)</li>
       <li><b>제3자 제공</b>: 제공하지 않습니다.</li>
       <li><b>운영자</b>: 장민철 팀장 (010-4920-8250)</li>
+      <li><b>광고 측정</b>: 광고 효과 확인을 위해 메타(페이스북·인스타그램) 픽셀을 사용합니다. 방문·예약 신청 여부만 전달되며 이름·연락처는 전달하지 않습니다.</li>
     </ul>
     <p>동의를 거부하실 수 있으며, 이 경우 예약 접수가 제한됩니다. 전화(1844-0974) 상담은 동의 없이 이용 가능합니다.</p>
     <button type="button" class="ok" data-close="priv">닫기</button>
@@ -467,7 +468,21 @@ var SITE_NAME  = '향남 롯데캐슬 시그니처';
 var SMS_TO     = '01049208250';   // 휴대폰 예약 문자를 받을 번호
 var CALL       = '1844-0974';     // 대표전화
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyatF_hZmn3i3K18yQy0N8WxzLgLeer6xneMzw0Iw5Km90U2gl2pNEVAQCi_gTkmbLG2A/exec';  // PC 예약 → 솔라피 문자
+var META_PIXEL_ID = '1820643902461467';           // 메타 픽셀(데이터 세트) ID 숫자. 비워두면 픽셀 꺼짐
 /* ======================================== */
+
+/* 메타 픽셀: 페이지 방문(PageView), 예약 신청(Lead), 전화 버튼(Contact)만 알림. 이름·연락처는 보내지 않음 */
+if(META_PIXEL_ID){
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init',META_PIXEL_ID);fbq('track','PageView');
+}
+function px(ev,data){if(window.fbq){try{fbq('track',ev,data||{});}catch(_){}}}
+document.addEventListener('click',function(e){
+  var a=e.target.closest&&e.target.closest('a[href^="tel:"]');
+  if(a)px('Contact',{content_name:SITE_NAME});
+});
 
 var TYPES=['84A','84B','84C','84D','84E','84F','84G','102','112','120'];
 function formHTML(k){
@@ -509,8 +524,10 @@ document.querySelectorAll('.rform').forEach(function(f){
     if(!el.agree.checked){m.textContent='개인정보 수집·이용에 동의해 주세요.';return;}
     m.textContent='';
     var body='['+SITE_NAME+' 방문예약]\n이름: '+name+'\n연락처: '+tel+(date?'\n방문일: '+date:'')+(time?'\n시간: '+time:'')+(types?'\n관심평형: '+types:'')+(memo?'\n문의: '+memo:'');
+    px('Lead',{content_name:SITE_NAME,content_category:isMobile()?'mobile_sms':'pc_form'});
     if(isMobile()){
-      location.href=smsLink(body);
+      var go=smsLink(body);
+      setTimeout(function(){location.href=go;},window.fbq?300:0);
       m.style.color='#2e7d32';m.textContent='문자 앱에서 전송 버튼을 눌러주시면 접수됩니다.';
       setTimeout(function(){f.reset();m.textContent='';m.style.color='';},4000);
       return;
